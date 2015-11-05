@@ -19,7 +19,7 @@ password: String
 sig RegisteredCostumer extends RegisteredUser{}
 
 sig TaxiDriver extends RegisteredUser {
-position: Position,
+position:  Position,
 available: Bool
 }
 

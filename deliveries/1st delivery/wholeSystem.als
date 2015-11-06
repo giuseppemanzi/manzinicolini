@@ -46,21 +46,22 @@ hours: Int,
 mins: Int*/
 } 
 //{year>0 and month>0 and month<=12 and day>0 and day<=31 and hours>=0 and hours<=23 and mins>0 and mins<60}
+//solver cannot find instances with this right restriction so we commented it
 
 //type of requests
 abstract sig Request{
 position:Position
 }
 
-sig RegisteredRequest{
+sig RegisteredRequest extends Request{
 costumer:RegisteredCostumer
 }
 
-sig GuestRequest{
+sig GuestRequest extends Request{
 phoneNumber: some Int
 } {#phoneNumber = 6 and (all x:phoneNumber | x > 0)} //#phoneNumber should be 10 but solver cannot find instances
 
-sig Reservation{
+sig Reservation extends Request{
 costumer:RegisteredCostumer,
 time:Time
 }
@@ -96,17 +97,21 @@ fact nextNotCyclic {
 	no e:TaxiQueueElement | e in e.^next
 	no e:RequestQueueElement | e in e.^next 
 }
-/*
+
 fact eachTaxiInOnlyOneQueue{
 	(no disj e1, e2:TaxiQueueElement | e1 in TaxiQueue.root.*next and e2 in TaxiQueue.root.*next and e1.t=e2.t)
 }
-*/
+
 fact eachRequestInOnlyOneQueue{
 	(no disj e1, e2:RequestQueueElement | e1 in RequestQueue.root.*next and e2 in RequestQueue.root.*next and e1.r=e2.r)
 }
 
 fact eachRequestInRightZoneQueue{
 	(all q:RequestQueue, r1:RequestQueueElement | r1 in q.root.*next implies r1.r.position.zone = q.zone)
+}
+
+fact ReservationsHasHigherPriorityThanRequests{
+	(all q:RequestQueue, e:RequestQueueElement, r1:Request | (e in q.root.*next and r1 in e.r and not(r1 in Reservation)) implies (no r2:Reservation | r2 in e.next.r))
 }
 
 fact ifTaxiInQueueThenAvailable {no t1:TaxiDriver | t1 in TaxiQueueElement.t and t1.available = False}
@@ -124,16 +129,11 @@ fact univoqueUsername { no disj ru1, ru2:RegisteredUser | (ru1.username = ru2.us
 
 //PREDICATES
 
-pred enqueTaxi[t:TaxiQueueElement, q, q':TaxiQueue] {
-
-}
-
-pred enqueRequest() {}
-
 pred show(){
 #TaxiQueue>0
 all q:TaxiQueue | #(q.root.*(this/TaxiQueueElement <: next))>1
 #GuestRequest>0
+#Reservation>1
 }
 
-run enqueTaxi for 10 but exactly 10 String, exactly 2 TaxiQueue
+run show for 4 but exactly 10 String
